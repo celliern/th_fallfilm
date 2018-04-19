@@ -39,7 +39,7 @@ class Experiment:
 
     def iter_simul(self, simul):
         simul.attach_container(self.working_dir,
-                               force=True)
+                               force=True, nbuffer=10)
         log.info(f"\nsimulation {simul.id}"
                  f"\nrunning {self.model.name}")
         try:
