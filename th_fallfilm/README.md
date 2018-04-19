@@ -18,7 +18,6 @@ Contains some tools to initialize the fields for common cases (periodic box and 
 
 Contain all the relation between the numbers describing the fluids. For now, water has its values filled for 20°C.
 
-
 ## `th_fallfilm.misc.signals`
 
 Is a minimalistic library that contains usual input signal for falling films : sinusoidal signal,
