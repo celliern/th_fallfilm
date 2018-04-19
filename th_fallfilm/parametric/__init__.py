@@ -13,6 +13,6 @@ except ImportError:
 
 logging.getLogger(__name__).addHandler(NullHandler())
 
-from sampling import (generate_random_design,  # noqa
-                      generate_full_design,
-                      generate_sample)
+from .sampling import (generate_random_design,  # noqa
+                       generate_full_design,
+                       generate_sample)
