@@ -67,34 +67,3 @@ class Error:
         return (2 * self.absolute /
                 (np.linalg.norm(self.ref, self.norm) +
                  np.linalg.norm(self.value, self.norm)))
-
-
-def compute_err(name, norm, models):
-    name = sample["name"]
-    print(("sample: %s, norm: %s" % (name, norm)).ljust(80), end="\r")
-    data_dns = trf.retrieve_container(
-        "./data/Fourier/%s" % name, isel=-1).data.load()
-    data_ch = trf.retrieve_container(
-        "./data/chock/%s" % name, isel=-1).data.load()
-    data_van = trf.retrieve_container(
-        "./data/vanilla/%s" % name, isel=-1).data.load()
-    data_nch = trf.retrieve_container(
-        "./data/no_chock/%s" % name, isel=-1).data.load()
-
-    phi_van = data_van["phi"]
-    phi_nch = data_nch["phi"]
-    phi_ch = data_ch["phi"]
-    phi_dns = (data_dns["T"].diff("y") / data_dns.y.diff("y").mean()).isel(y=0)
-
-    theta_van = data_van["theta"]
-    theta_nch = data_nch["theta"]
-    theta_ch = data_ch["theta"]
-    theta_dns = data_dns["T"].isel(y=-1)
-
-    err_theta_van = Error(theta_van, theta_dns, norm)
-    err_theta_nch = Error(theta_nch, theta_dns, norm)
-    err_theta_ch = Error(theta_ch, theta_dns, norm)
-
-    err_phi_van = Error(phi_van, phi_dns, norm)
-    err_phi_nch = Error(phi_nch, phi_dns, norm)
-    err_phi_ch = Error(phi_ch, phi_dns, norm)
