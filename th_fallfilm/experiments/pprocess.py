@@ -52,6 +52,29 @@ def compute_grad(simul):
     return simul
 
 
+def compute_grad_asympt(simul):
+    data = simul.fields
+
+    dxT, dyT = np.gradient(data["T"],
+                           (data.x[1] - data.x[0]).values,
+                           1, axis=(0, 1))
+    dyT /= ((data.y[1] - data.y[0]) * data.h).values[:, None]
+
+    dxh = np.gradient(data["h"], (data.x[1] - data.x[0]).values, axis=0)
+
+    simul.fields["dxT"] = ("x", "y"), dxT
+    simul.fields["dyT"] = ("x", "y"), dyT
+    simul.fields["mag"] = ("x", "y"), dxT ** 2 + dyT ** 2
+
+    flux_h = -(dxh * data.dxT.isel(y=-1) + data.dyT.isel(y=-1))
+    flux_s = -(data.dxT.isel(y=0) + data.dyT.isel(y=0))
+
+    simul.fields["flux_h"] = ("x",), flux_h
+    simul.fields["flux_s"] = ("x",), flux_s
+
+    return simul
+
+
 class Error:
     def __init__(self, value, reference, norm):
         self.value = value
