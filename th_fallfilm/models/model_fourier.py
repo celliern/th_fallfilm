@@ -1460,7 +1460,7 @@ class FullFourierModel:
                                             allow_input_downcast=True)
 
         def J(fields, pars):
-            if isinstance(pars["Ct"], float):
+            if isinstance(pars["Ct"], (float, int)):
                 pars["Ct"] = np.zeros(fields["x"].shape) + pars["Ct"]
             fields = map(fields.get, [*"xyhqT"])
             pars = map(pars.get, "Ct, Re, We, Pe, B".split(", "))
@@ -1468,7 +1468,7 @@ class FullFourierModel:
             return sps.csc_matrix((Jdata, (rows, cols)))
 
         def F(fields, pars):
-            if isinstance(pars["Ct"], float):
+            if isinstance(pars["Ct"], (float, int)):
                 pars["Ct"] = np.zeros(fields["x"].shape) + pars["Ct"]
             fields = map(fields.get, [*"xyhqT"])
             pars = map(pars.get, "Ct, Re, We, Pe, B".split(", "))
