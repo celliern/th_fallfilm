@@ -13,9 +13,9 @@ class ChockPeriodic(PeriodicBox):
     model = chock()
 
     def post_processes_factory(self):
-        def post_process_Phi(simul):
-            simul.fields["phi"] = simul.fields["Phi"] * simul.fields["h"]
-            return simul
+        def post_process_Phi(fields):
+            fields["phi"] = fields["Phi"] * fields["h"]
+            return fields
 
         return [("post_process_phi", post_process_Phi),
                 ("post_process_T", compute_T),

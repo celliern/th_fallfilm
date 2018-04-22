@@ -16,15 +16,14 @@ class FourierPeriodic(PeriodicBox):
     model = fourier(periodic=True)
 
     def post_processes_factory(self):
-        def post_process_theta(simul):
-            simul.fields["theta"] = "x", simul.fields["T"].isel(y=-1)
-            return simul
+        def post_process_theta(fields):
+            fields["theta"] = "x", fields["T"].isel(y=-1)
+            return fields
 
-        def post_process_phi(simul):
-            dy = simul.fields["y"].isel(y=1) - simul.fields["y"].isel(y=0)
-            simul.fields["phi"] = ("x",
-                                   simul.fields["T"].diff("y").isel(y=0) / dy)
-            return simul
+        def post_process_phi(fields):
+            dy = fields["y"].isel(y=1) - fields["y"].isel(y=0)
+            fields["phi"] = ("x", fields["T"].diff("y").isel(y=0) / dy)
+            return fields
         return [("post_process_theta", post_process_theta),
                 ("post_process_phi", post_process_phi),
                 ("post_process_grad", compute_grad)]
