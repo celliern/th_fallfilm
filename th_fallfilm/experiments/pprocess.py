@@ -2,77 +2,79 @@
 # coding=utf8
 
 import numpy as np
+import inspect
 
 
-def compute_timer(simul):
-    simul.fields["timer_last"] = simul.timer.last
-    simul.fields["timer_total"] = simul.timer.total
-    return simul
+def compute_timer(fields, timer):
+    fields["timer_last"] = timer.last
+    fields["timer_total"] = timer.total
+    return fields
 
 
-def compute_T(simul):
+def compute_T(fields, parameters):
     y = np.linspace(0, 1, 10)
-    simul.fields = simul.fields.assign_coords(y=y)
+    fields = fields.assign_coords(y=y)
 
-    h = np.repeat(simul.fields.h.expand_dims("y", -1),
+    h = np.repeat(fields.h.expand_dims("y", -1),
                   y.size, axis=1)
-    theta = np.repeat(simul.fields.theta.expand_dims("y", -1),
+    theta = np.repeat(fields.theta.expand_dims("y", -1),
                       y.size, axis=1)
-    phi = np.repeat(simul.fields.phi.expand_dims("y", -1),
+    phi = np.repeat(fields.phi.expand_dims("y", -1),
                     y.size, axis=1)
 
-    B = simul.parameters["B"]
+    B = parameters["B"]
     T = ((2 + phi*(-2 + y)*(-1 + y)*y + 2*(-1 + theta)*y**2 +
-         B*h*(2 + phi*(-2 + y)*(-1 + y)*y + y**2*(-3 + 2*theta + y)))
+          B*h*(2 + phi*(-2 + y)*(-1 + y)*y + y**2*(-3 + 2*theta + y)))
          / (2 + 2*B*h))
-    simul.fields["T"] = ("x", "y"), T
-    return simul
+    fields["T"] = ("x", "y"), T
+    return fields
 
 
-def compute_grad(simul):
-    data = simul.fields
+def compute_grad(fields):
 
-    dxT, dyT = np.gradient(data["T"],
-                           (data.x[1] - data.x[0]).values,
+    dxT, dyT = np.gradient(fields["T"],
+                           (fields.x[1] - fields.x[0]).values,
                            1, axis=(0, 1))
-    dyT /= ((data.y[1] - data.y[0]) * data.h).values[:, None]
+    dyT /= ((fields.y[1] - fields.y[0]) * fields.h).values[:, None]
 
-    dxh = np.gradient(data["h"], (data.x[1] - data.x[0]).values, axis=0)
+    dxh = np.gradient(fields["h"], (fields.x[1] - fields.x[0]).values, axis=0)
 
-    simul.fields["dxT"] = ("x", "y"), dxT
-    simul.fields["dyT"] = ("x", "y"), dyT
-    simul.fields["mag"] = ("x", "y"), dxT ** 2 + dyT ** 2
+    fields["dxT"] = ("x", "y"), dxT
+    fields["dyT"] = ("x", "y"), dyT
+    fields["mag"] = ("x", "y"), dxT ** 2 + dyT ** 2
 
-    flux_h = -(dxh * data.dxT.isel(y=-1) + data.dyT.isel(y=-1))
-    flux_s = -(data.dxT.isel(y=0) + data.dyT.isel(y=0))
+    flux_h = -(dxh * fields.dxT.isel(y=-1) + fields.dyT.isel(y=-1))
+    flux_s = -(fields.dxT.isel(y=0) + fields.dyT.isel(y=0))
 
-    simul.fields["flux_h"] = ("x",), flux_h
-    simul.fields["flux_s"] = ("x",), flux_s
+    fields["flux_h"] = ("x",), flux_h
+    fields["flux_s"] = ("x",), flux_s
 
-    return simul
+    return fields
 
 
-def compute_grad_asympt(simul):
-    data = simul.fields
+def compute_grad_asympt(fields):
 
-    dxT, dyT = np.gradient(data["T"],
-                           (data.x[1] - data.x[0]).values,
+    dxT, dyT = np.gradient(fields["T"],
+                           (fields.x[1] - fields.x[0]).values,
                            1, axis=(0, 1))
-    dyT /= ((data.y[1] - data.y[0]) * data.h).values[:, None]
+    dyT /= ((fields.y[1] - fields.y[0]) * fields.h).values[:, None]
 
-    dxh = np.gradient(data["h"], (data.x[1] - data.x[0]).values, axis=0)
+    dxh = np.gradient(fields["h"], (fields.x[1] - fields.x[0]).values, axis=0)
 
-    simul.fields["dxT"] = ("x", "y"), dxT
-    simul.fields["dyT"] = ("x", "y"), dyT
-    simul.fields["mag"] = ("x", "y"), dxT ** 2 + dyT ** 2
+    fields["dxT"] = ("x", "y"), dxT
+    fields["dyT"] = ("x", "y"), dyT
+    fields["mag"] = ("x", "y"), dxT ** 2 + dyT ** 2
 
-    flux_h = -(dxh * data.dxT.isel(y=-1) + data.dyT.isel(y=-1))
-    flux_s = -(data.dxT.isel(y=0) + data.dyT.isel(y=0))
+    nx_h = -dxh / (np.sqrt(1 + dxh**2))
+    ny_h = -1 / (np.sqrt(1 + dxh**2))
 
-    simul.fields["flux_h"] = ("x",), flux_h
-    simul.fields["flux_s"] = ("x",), flux_s
+    flux_h = nx_h * fields.dxT.isel(y=-1) + ny_h * fields.dyT.isel(y=-1)
+    flux_s = -(fields.dxT.isel(y=0) + fields.dyT.isel(y=0))
 
-    return simul
+    fields["Phi_h"] = ("x",), flux_h
+    fields["Phi_s"] = ("x",), flux_s
+
+    return fields
 
 
 class Error:
@@ -90,3 +92,13 @@ class Error:
         return (2 * self.absolute /
                 (np.linalg.norm(self.ref, self.norm) +
                  np.linalg.norm(self.value, self.norm)))
+
+
+def pprocess_proxy(pprocess):
+    requested_attributes = inspect.getargspec(pprocess)
+
+    def proxied_pprocess(simul):
+        kwargs = {key: getattr(simul, key)
+                  for key in requested_attributes[0]}
+        simul.fields = pprocess(**kwargs)
+    return proxied_pprocess

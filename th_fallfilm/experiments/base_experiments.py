@@ -10,7 +10,7 @@ import path
 import triflow as trf
 from th_fallfilm.misc import helpers
 
-from .pprocess import compute_timer
+from .pprocess import compute_timer, pprocess_proxy
 
 log = logging.getLogger(__name__)
 
@@ -53,20 +53,18 @@ class Experiment:
         log.info(f"\nsimulation {simul.id}"
                  f"\n{self.model.name}, success !")
 
+    def insert_pprocesses(self, simul, *post_processes):
+        post_processes = [*post_processes, *self.post_processes_factory()]
+        post_processes.insert(0, ("timer_pprocess", compute_timer))
+        for ppname, pprocess in post_processes:
+            simul.add_post_process(ppname, pprocess_proxy(pprocess))
+
     def run(self, sample, hold=False, **kwargs):
         sample = dict(**sample)
         sample.update(kwargs)
         simul = self.init_simul(sample)
-
-        post_processes = self.post_processes_factory()
-        post_processes.insert(0, ("timer_pprocess", compute_timer))
-        if post_processes:
-            [simul.add_post_process(ppname, pprocess)
-             for ppname, pprocess
-             in post_processes]
-
+        self.insert_pprocesses(simul)
         self.simuls.append(simul)
-
         if hold:
             return simul
         self.iter_simul(simul)
