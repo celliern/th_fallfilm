@@ -20,8 +20,9 @@ log = logging.getLogger(__name__)
 class Experiment:
     name = "Experiment"
 
-    def __init__(self, working_dir='.', strict=True):
+    def __init__(self, working_dir='.', strict=True, save="all"):
         self.simuls = []
+        self._save = save
         if not self.model:
             raise NotImplementedError("model not provided by %s" %
                                       self.name)
@@ -39,17 +40,12 @@ class Experiment:
 
     def iter_simul(self, simul):
         simul.attach_container(self.working_dir,
-                               force=True, nbuffer=10)
+                               force=True, nbuffer=10, save=self._save)
         log.info(f"\nsimulation {simul.id}"
                  f"\nrunning {self.model.name}")
-        try:
-            for _, (t, _) in enumerate(simul):
-                log.debug(f"simulation {simul.id} "
-                          f"{self.model.name} t: {t/simul.tmax*100:g} %")
-            simul.container.flush()
-        finally:
-            trf.Container.merge_datafiles(
-                self.working_dir / simul.id)
+        for _, (t, _) in enumerate(simul):
+            log.debug(f"simulation {simul.id} "
+                        f"{self.model.name} t: {t/simul.tmax*100:g} %")
         log.info(f"\nsimulation {simul.id}"
                  f"\n{self.model.name}, success !")
 
