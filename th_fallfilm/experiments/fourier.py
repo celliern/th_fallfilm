@@ -41,7 +41,7 @@ class FourierPeriodic(PeriodicBox):
 
 class CoarseFourierPeriodic(FourierPeriodic):
     name = "coarse_fourier_periodic"
-    Ny = 2
+    Ny = 3
 
 
 class RefFourierPeriodic(FourierPeriodic):
