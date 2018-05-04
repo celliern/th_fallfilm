@@ -71,7 +71,7 @@ class CoarseFourierPeriodic(FourierPeriodic):
     Ny = 3
 
 
-class RefFourierPeriodic(FourierPeriodic):
+class ReferenceFourierPeriodic(FourierPeriodic):
     name = "reference_fourier_periodic"
 
     def Ny(self, Pe):
@@ -83,7 +83,7 @@ class CoarseFourierOpen(FourierOpen):
     Ny = 3
 
 
-class RefFourierOpen(FourierOpen):
+class ReferenceFourierOpen(FourierOpen):
     name = "reference_fourier_open"
 
     def Ny(self, Pe):

@@ -41,16 +41,12 @@ class Experiment:
     def iter_simul(self, simul):
         simul.attach_container(self.working_dir,
                                force=True, nbuffer=10, save=self._save)
-        log.info(f"\nsimulation {simul.id}"
-                 f"\nrunning {self.model.name}")
+        log.info(f"simulation {simul.id} ({self.model.name}) is running")
         for i, (t, _) in enumerate(simul):
-            log.debug(f"simulation {simul.id} "
-                      f"{self.model.name} t: {t/simul.tmax*100:g} %")
+            log.debug(f"simulation {simul.id} ({self.model.name}) t: {t/simul.tmax*100:g} %")
             if i % 10 == 0:
-                log.info(f"simulation {simul.id} "
-                         f"{self.model.name} t: {t/simul.tmax*100:g} %")
-        log.info(f"\nsimulation {simul.id}"
-                 f"\n{self.model.name}, success !")
+                log.info(f"simulation {simul.id} ({self.model.name}) t: {t/simul.tmax*100:g} %")
+        log.info(f"\nsimulation {simul.id} ({self.model.name}), success !")
 
     def insert_pprocesses(self, simul, *post_processes):
         post_processes = [*post_processes, *self.post_processes_factory()]
