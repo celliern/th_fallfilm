@@ -43,9 +43,12 @@ class Experiment:
                                force=True, nbuffer=10, save=self._save)
         log.info(f"\nsimulation {simul.id}"
                  f"\nrunning {self.model.name}")
-        for _, (t, _) in enumerate(simul):
+        for i, (t, _) in enumerate(simul):
             log.debug(f"simulation {simul.id} "
-                        f"{self.model.name} t: {t/simul.tmax*100:g} %")
+                      f"{self.model.name} t: {t/simul.tmax*100:g} %")
+            if i % 10 == 0:
+                log.info(f"simulation {simul.id} "
+                         f"{self.model.name} t: {t/simul.tmax*100:g} %")
         log.info(f"\nsimulation {simul.id}"
                  f"\n{self.model.name}, success !")
 
@@ -115,3 +118,53 @@ class PeriodicBox(Experiment):
         phi = - B / (1 + B * h) * h
 
         return dict(x=x, h=h, q=q, theta=theta, phi=phi)
+
+
+class OpenBox(Experiment):
+    name = "OpenBox"
+
+    def init_simul(self, sample):
+        lf, tf = sample["l_factor"], sample["t_factor"]
+        N, dx = (sample.get(var, None) for var in ["N", "dx"])
+        fields = self.init_fields(L=sample["L"] * lf, B=sample["B"],
+                                  Pe=sample["Pe"], N=N, dx=dx * lf,
+                                  h=helpers.make_jump)
+
+        dt = sample["dt"] * tf
+        tmax = sample["tmax"] * tf
+        simul = trf.Simulation(self.model, t=0, fields=fields,
+                               parameters=dict(**sample, periodic=False),
+                               hook=self.hook_factory(), dt=dt, tmax=tmax,
+                               tol=sample['tol'], id=sample["name"])
+
+        return simul
+
+    def init_fields(self, L, B, Pe, *, N=None, dx=None, h=1., q=None):
+        if all([N, dx]) or not any([N, dx]):
+            raise ValueError("You have to fill either N or dx.")
+        if N:
+            x, dx = np.linspace(0, L, N, retstep=True)
+        else:
+            x = np.arange(0, L + dx, dx)
+
+        def ensure_field(var):
+            if callable(var):
+                return var(x)
+            if isinstance(var, (float, int)):
+                return np.zeros_like(x) + var
+            return var
+
+        h = ensure_field(h)
+        if not q:
+            q = h ** 3 / 3
+        else:
+            q = ensure_field(q)
+        theta = 1 / (1 + B * h)
+        phi = - B / (1 + B * h) * h
+
+        return dict(x=x, h=h, q=q, theta=theta, phi=phi)
+
+    def hook_factory(self):
+        def frequency_forcing():
+            return
+        return frequency_forcing

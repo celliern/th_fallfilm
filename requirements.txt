@@ -3,6 +3,7 @@ pandas
 scipy
 coolname
 symb_dict
+parse
 pyDOE
 path.py
 triflow
